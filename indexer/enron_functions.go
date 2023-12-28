@@ -40,8 +40,8 @@ const (
 	ZSpassword    = "Complexpass#123"
 )
 
-func List_all_folders(folder_name string) []string { //recibe como parámetro el folder "maildir".
-	files, err := os.ReadDir(folder_name) //"ioutil.ReadDir" extrae todos los subfolders y los guarda en "files"
+func GetFolders(folder_name string) []string {
+	files, err := os.ReadDir(folder_name)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -50,139 +50,81 @@ func List_all_folders(folder_name string) []string { //recibe como parámetro el
 	for _, file := range files {
 		filePath := filepath.Join(folder_name, file.Name())
 
-		// Verificar si es un directorio
 		if file.IsDir() {
-			// Ignorar directorios que no se pueden abrir
 			_, err := os.Open(filePath)
 			if err != nil {
 				fmt.Printf("Error opening directory %s: %s\n", filePath, err)
 				continue
 			}
 
-			// Si llegamos aquí, el directorio es válido
 			folders = append(folders, file.Name())
 		}
 	}
 	return folders
 }
 
-// Lista cada uno de los archivos o correos
-func List_files(folder_name string) []string {
-	files, err := os.ReadDir(folder_name) //https://golang.cafe/blog/how-to-list-files-in-a-directory-in-go.html
+func GetFiles(folder_name string) []string {
+	files, err := os.ReadDir(folder_name)
 	if err != nil {
 		log.Fatal(err)
 	}
-	var files_names []string //array donde se guardarán los nombres de los archivos contenidos en las subcarpetas.
+	var fileNames []string
 	for _, file := range files {
 		filePath := filepath.Join(folder_name, file.Name())
 
-		// Verificar si es un directorio
 		if file.IsDir() {
-			// Ignorar directorios
 			continue
 		}
 
-		// Ignorar archivos con el nombre ".DS_Store"
 		if file.Name() != ".DS_Store" {
-			// Verificar explícitamente si el archivo se puede abrir
 			sysFile, err := os.Open(filePath)
 			if err != nil {
 				fmt.Printf("Error opening file %s: %s\n", filePath, err)
 				continue
 			}
 			sysFile.Close()
-
-			// Si llegamos aquí, el archivo es válido
-			files_names = append(files_names, file.Name())
+			fileNames = append(fileNames, file.Name())
 		}
 	}
-	return files_names
+	return fileNames
 }
 
-func FormatData(data_lines *bufio.Scanner, id int) ECEmail { //parse_data
+func FormatData(data_lines *bufio.Scanner, id int) ECEmail {
 	var data ECEmail
 	for data_lines.Scan() {
 		data.ID = id
 		if strings.Contains(data_lines.Text(), "Message-ID:") {
 			data.Message_ID = data_lines.Text()[11:]
-			fmt.Println("data_lines.Text():", data_lines.Text())
-			fmt.Println("len(data_lines.Text()):", len(data_lines.Text()))
-			fmt.Println("índice utilizado:", 11)
 		} else if strings.Contains(data_lines.Text(), "Date:") {
 			data.Date = data_lines.Text()[5:]
-			fmt.Println("data_lines.Text():", data_lines.Text())
-			fmt.Println("len(data_lines.Text()):", len(data_lines.Text()))
-			fmt.Println("índice utilizado:", 5)
 		} else if strings.Contains(data_lines.Text(), "From:") {
 			data.From = data_lines.Text()[5:]
-			fmt.Println("data_lines.Text():", data_lines.Text())
-			fmt.Println("len(data_lines.Text()):", len(data_lines.Text()))
-			fmt.Println("índice utilizado:", 6)
 		} else if strings.Contains(data_lines.Text(), "To:") {
 			data.To = data_lines.Text()[3:]
-			fmt.Println("data_lines.Text():", data_lines.Text())
-			fmt.Println("len(data_lines.Text()):", len(data_lines.Text()))
-			fmt.Println("índice utilizado:", 3)
 		} else if strings.Contains(data_lines.Text(), "Subject:") {
 			data.Subject = data_lines.Text()[8:]
-			fmt.Println("data_lines.Text():", data_lines.Text())
-			fmt.Println("len(data_lines.Text()):", len(data_lines.Text()))
-			fmt.Println("índice utilizado:", 8)
 		} else if strings.Contains(data_lines.Text(), "Cc:") {
 			data.Cc = data_lines.Text()[3:]
-			fmt.Println("data_lines.Text():", data_lines.Text())
-			fmt.Println("len(data_lines.Text()):", len(data_lines.Text()))
-			fmt.Println("índice utilizado:", 3)
 		} else if strings.Contains(data_lines.Text(), "Mime-Version:") {
 			data.Mime_version = data_lines.Text()[9:]
-			fmt.Println("data_lines.Text():", data_lines.Text())
-			fmt.Println("len(data_lines.Text()):", len(data_lines.Text()))
-			fmt.Println("índice utilizado:", 9)
 		} else if strings.Contains(data_lines.Text(), "Content-Type:") {
 			data.Content_Type = data_lines.Text()[9:]
-			fmt.Println("data_lines.Text():", data_lines.Text())
-			fmt.Println("len(data_lines.Text()):", len(data_lines.Text()))
-			fmt.Println("índice utilizado:", 9)
 		} else if strings.Contains(data_lines.Text(), "Content-Transfer-Encoding:") {
 			data.Content_Transfer_Encoding = data_lines.Text()[9:]
-			fmt.Println("data_lines.Text():", data_lines.Text())
-			fmt.Println("len(data_lines.Text()):", len(data_lines.Text()))
-			fmt.Println("índice utilizado:", 9)
 		} else if strings.Contains(data_lines.Text(), "X-From:") {
 			data.X_from = data_lines.Text()[9:]
-			fmt.Println("data_lines.Text():", data_lines.Text())
-			fmt.Println("len(data_lines.Text()):", len(data_lines.Text()))
-			fmt.Println("índice utilizado:", 9)
 		} else if strings.Contains(data_lines.Text(), "X-To:") {
 			data.X_to = data_lines.Text()[9:]
-			fmt.Println("data_lines.Text():", data_lines.Text())
-			fmt.Println("len(data_lines.Text()):", len(data_lines.Text()))
-			fmt.Println("índice utilizado:", 9)
 		} else if strings.Contains(data_lines.Text(), "X-cc:") {
 			data.X_cc = data_lines.Text()[6:]
-			fmt.Println("data_lines.Text():", data_lines.Text())
-			fmt.Println("len(data_lines.Text()):", len(data_lines.Text()))
-			fmt.Println("índice utilizado:", 6)
 		} else if strings.Contains(data_lines.Text(), "X-bcc:") {
 			data.X_bcc = data_lines.Text()[6:]
-			fmt.Println("data_lines.Text():", data_lines.Text())
-			fmt.Println("len(data_lines.Text()):", len(data_lines.Text()))
-			fmt.Println("índice utilizado:", 6)
 		} else if strings.Contains(data_lines.Text(), "X-Folder:") {
 			data.X_folder = data_lines.Text()[9:]
-			fmt.Println("data_lines.Text():", data_lines.Text())
-			fmt.Println("len(data_lines.Text()):", len(data_lines.Text()))
-			fmt.Println("índice utilizado:", 9)
 		} else if strings.Contains(data_lines.Text(), "X-Origin:") {
 			data.X_origin = data_lines.Text()[9:]
-			fmt.Println("data_lines.Text():", data_lines.Text())
-			fmt.Println("len(data_lines.Text()):", len(data_lines.Text()))
-			fmt.Println("índice utilizado:", 9)
 		} else if strings.Contains(data_lines.Text(), "X-FileName:") {
 			data.X_filename = data_lines.Text()[9:]
-			fmt.Println("data_lines.Text():", data_lines.Text())
-			fmt.Println("len(data_lines.Text()):", len(data_lines.Text()))
-			fmt.Println("índice utilizado:", 9)
 		} else {
 			data.Content = data.Content + data_lines.Text()
 		}
@@ -190,7 +132,7 @@ func FormatData(data_lines *bufio.Scanner, id int) ECEmail { //parse_data
 	return data
 }
 
-func PostDataToZincSearch(data ECEmail) { //index_data
+func PostDataToZincSearch(data ECEmail) {
 	jsonData, _ := json.MarshalIndent(data, "", "   ")
 	req, err := http.NewRequest(http.MethodPost, ZincSearchUrl, bytes.NewBuffer(jsonData))
 	if err != nil {
