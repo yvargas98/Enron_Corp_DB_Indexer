@@ -12,8 +12,8 @@ import (
 	"runtime/pprof"
 )
 
-var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to `file`")
-var memprofile = flag.String("memprofile", "", "write memory profile to `file`")
+var cpuprofile = flag.String("cpuprofile", "cpu_profile.pprof", "write cpu profile to `file`")
+var memprofile = flag.String("memprofile", "mem_profile.pprof", "write memory profile to `file`")
 
 func main() {
 	flag.Parse()
