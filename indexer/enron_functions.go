@@ -34,10 +34,16 @@ type ECEmail struct {
 	Content                   string `json:"content"`
 }
 
+// const (
+// 	ZincSearchUrl = "http://localhost:4080/api/enron_corp/_doc"
+// 	ZSusername    = "admin"
+// 	ZSpassword    = "Complexpass#123"
+// )
+
 const (
-	ZincSearchUrl = "http://localhost:4080/api/enron_corp/_doc"
-	ZSusername    = "admin"
-	ZSpassword    = "Complexpass#123"
+	ZincSearchUrl = "http://localhost:5080/api/default/enron_corp/_json"
+	ZSusername    = "yvargas.vargasgodoy@gmail.com"
+	ZSpassword    = "@Va221998"
 )
 
 func GetFolders(folder_name string) []string {
