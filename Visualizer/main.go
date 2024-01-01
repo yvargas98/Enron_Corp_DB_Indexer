@@ -128,8 +128,7 @@ func main() {
 
 		sendSearchResponse(w, searchResponseBytes)
 	})
-	apiV1 := chi.NewRouter()
-	router.Mount("/api/default", apiV1)
+
 	fmt.Printf("Server is running at port %v\n", port)
 	http.ListenAndServe(":"+port, router)
 }
