@@ -14,6 +14,6 @@
 
 <style scoped>
 .bg-email-search {
-  background-image: url('../assets/email_search.jpeg');
+    background-image: url('../assets/email_search.jpeg');
 }
 </style>

@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <MainView/>
+    <MainView />
   </div>
 </template>
 
@@ -8,5 +8,4 @@
 import MainView from "./views/MainView.vue";
 </script>
 
-<style scoped>
-</style>
+<style scoped></style>

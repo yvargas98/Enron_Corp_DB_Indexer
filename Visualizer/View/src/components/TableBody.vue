@@ -23,7 +23,7 @@ export default {
     },
     methods: {
         highlightTextField(text) {
-            if(text.length > 200) {
+            if (text.length > 200) {
                 const queryPosition = text.toLowerCase().indexOf(this.value.toLowerCase());
                 const paragraphs = text.split('\n\n');
                 const formattedContent = paragraphs.map(paragraph => `${paragraph}`).join('');
@@ -50,17 +50,20 @@ export default {
             </td>
         </tr>
         <tr v-for="(email, i) in emails" :key="i">
-            <td class="px-4 py-4 text-sm text-gray-700 dark:text-gray-500 w-64 max-h-40 overflow-y-auto" v-html="highlightTextField(email.from)">
+            <td class="px-4 py-4 text-sm text-gray-700 dark:text-gray-500 w-64 max-h-40 overflow-y-auto"
+                v-html="highlightTextField(email.from)">
             </td>
-            <td class="px-4 py-4 text-sm text-gray-700 dark:text-gray-500 w-64 max-h-40 overflow-y-auto" v-html="highlightTextField(email.to)">
+            <td class="px-4 py-4 text-sm text-gray-700 dark:text-gray-500 w-64 max-h-40 overflow-y-auto"
+                v-html="highlightTextField(email.to)">
             </td>
-            <td class="px-4 py-4 text-sm text-gray-700 dark:text-gray-500 w-64 max-h-40 overflow-y-auto" v-html="highlightTextField(email.subject)">
+            <td class="px-4 py-4 text-sm text-gray-700 dark:text-gray-500 w-64 max-h-40 overflow-y-auto"
+                v-html="highlightTextField(email.subject)">
             </td>
-            <td class="px-4 py-4 text-sm text-gray-700 dark:text-gray-500 w-64 max-h-40 overflow-y-auto" v-html="highlightTextField(email.content)">
+            <td class="px-4 py-4 text-sm text-gray-700 dark:text-gray-500 w-64 max-h-40 overflow-y-auto"
+                v-html="highlightTextField(email.content)">
             </td>
         </tr>
     </tbody>
 </template>
 
-<style>
-</style>
+<style></style>
