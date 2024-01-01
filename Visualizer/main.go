@@ -10,13 +10,11 @@ import (
 	"strconv"
 	"time"
 
-	// "strconv"
-
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-func createSearchRequest(stream string, value string, from int, size int) []byte {
+func createSearchRequest(stream string, value string, from int, size int) ([]byte, error) {
 	searchRequest := struct {
 		Query struct {
 			SQL            string `json:"sql"`
@@ -49,28 +47,36 @@ func createSearchRequest(stream string, value string, from int, size int) []byte
 
 	searchRequestJSON, err := json.Marshal(searchRequest)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("Error marshaling search request %v", err)
 	}
 
-	return searchRequestJSON
+	return searchRequestJSON, nil
 }
 
 // Realiza la búsqueda
 func search(stream string, value string, from int, size int) ([]byte, error) {
-	searchRequestJSON := createSearchRequest(stream, value, from, size)
-
-	client := &http.Client{}
-	request, err := http.NewRequest("POST", "http://localhost:5080/api/default/_search", bytes.NewReader(searchRequestJSON))
+	searchRequestJSON, err := createSearchRequest(stream, value, from, size)
 	if err != nil {
 		return nil, err
 	}
+
+	url := os.Getenv("SEARCH_SERVER_URL")
+	username := os.Getenv("SEARCH_SERVER_USERNAME")
+	password := os.Getenv("SEARCH_SERVER_PASSWORD")
+
+	client := &http.Client{}
+	request, err := http.NewRequest("POST", url, bytes.NewReader(searchRequestJSON))
+	if err != nil {
+		return nil, fmt.Errorf("Error creating HTTP request %v", err)
+	}
 	request.Header.Set("Content-Type", "application/json")
-	request.SetBasicAuth("yvargas.vargasgodoy@gmail.com", "@Va221998")
+	request.SetBasicAuth(username, password)
 
 	response, err := client.Do(request)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error making HTTP request %v", err)
 	}
+	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("Error when searching: %d", response.StatusCode)
@@ -78,7 +84,7 @@ func search(stream string, value string, from int, size int) ([]byte, error) {
 
 	searchResponseBytes, err := io.ReadAll(response.Body)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error reading response body %v", err)
 	}
 
 	return searchResponseBytes, nil
@@ -87,13 +93,13 @@ func search(stream string, value string, from int, size int) ([]byte, error) {
 func sendSearchResponse(w http.ResponseWriter, searchResponseBytes []byte) {
 	var searchResponse map[string]interface{}
 	if err := json.Unmarshal(searchResponseBytes, &searchResponse); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Error unmarshaling search response %v", err), http.StatusInternalServerError)
 		return
 	}
 
 	hitsBytes, err := json.Marshal(searchResponse["hits"])
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Error marshaling hits %v", err), http.StatusInternalServerError)
 		return
 	}
 
@@ -117,12 +123,19 @@ func main() {
 		stream := r.URL.Query().Get("stream")
 		value := r.URL.Query().Get("value")
 		from, err := strconv.Atoi(r.URL.Query().Get("from"))
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Error converting 'from' to int %v", err), http.StatusBadRequest)
+		}
 		size, err := strconv.Atoi(r.URL.Query().Get("size"))
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Error converting 'size' to int %v", err), http.StatusBadRequest)
+		}
 
 		searchResponseBytes, err := search(stream, value, from, size)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			// w.WriteHeader(http.StatusInternalServerError)
+			// w.Write([]byte(err.Error()))
 			return
 		}
 
