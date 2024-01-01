@@ -34,18 +34,6 @@ type ECEmail struct {
 	Content                   string `json:"content"`
 }
 
-// const (
-// 	ZincSearchUrl = "http://localhost:4080/api/enron_corp/_doc"
-// 	ZSusername    = "admin"
-// 	ZSpassword    = "Complexpass#123"
-// )
-
-const (
-	ZincSearchUrl = "http://localhost:5080/api/default/enron_corp/_json"
-	ZSusername    = "yvargas.vargasgodoy@gmail.com"
-	ZSpassword    = "@Va221998"
-)
-
 func GetFolders(folder_name string) []string {
 	files, err := os.ReadDir(folder_name)
 	if err != nil {
@@ -140,6 +128,9 @@ func FormatData(data_lines *bufio.Scanner, id int) ECEmail {
 
 func PostDataToZincSearch(data ECEmail) {
 	jsonData, _ := json.MarshalIndent(data, "", "   ")
+	ZincSearchUrl := os.Getenv("INDEXER_URL")
+	ZSusername := os.Getenv("SEARCH_SERVER_USERNAME")
+	ZSpassword := os.Getenv("SEARCH_SERVER_PASSWORD")
 	req, err := http.NewRequest(http.MethodPost, ZincSearchUrl, bytes.NewBuffer(jsonData))
 	if err != nil {
 		log.Fatal("Error reading request.", err)
