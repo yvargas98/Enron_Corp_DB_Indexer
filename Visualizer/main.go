@@ -27,10 +27,6 @@ func createSearchRequest(stream string, value string, from int, size int) []byte
 			TrackTotalHits bool   `json:"track_total_hits"`
 			SQLMode        string `json:"sql_mode"`
 		} `json:"query"`
-		// Aggs struct {
-		// 	Agg1 string `json:"agg1"`
-		// 	Agg2 string `json:"agg2"`
-		// } `json:"aggs"`
 	}{
 		Query: struct {
 			SQL            string `json:"sql"`
@@ -41,21 +37,14 @@ func createSearchRequest(stream string, value string, from int, size int) []byte
 			TrackTotalHits bool   `json:"track_total_hits"`
 			SQLMode        string `json:"sql_mode"`
 		}{
-			SQL:            fmt.Sprintf("SELECT * FROM %s WHERE match_all('%s')", stream, value),
-			StartTime:      1703918002074496,
+			SQL:            fmt.Sprintf("SELECT * FROM %s WHERE match_all('%s') ORDER BY id", stream, value),
+			StartTime:      1703900002074496,
 			EndTime:        time.Now().UnixMicro(),
 			From:           from,
 			Size:           size,
 			TrackTotalHits: true,
 			SQLMode:        "full",
 		},
-		// Aggs: struct {
-		//     Agg1 string `json:"agg1"`
-		//     Agg2 string `json:"agg2"`
-		// }{
-		//     Agg1: "SELECT histogram(_timestamp, '5 minute') AS key, COUNT(*) AS num FROM query GROUP BY key ORDER BY key",
-		//     Agg2: "SELECT kubernetes.namespace_name AS namespace, COUNT(*) AS num FROM query GROUP BY namespace ORDER BY namespace",
-		// },
 	}
 
 	searchRequestJSON, err := json.Marshal(searchRequest)
@@ -66,7 +55,7 @@ func createSearchRequest(stream string, value string, from int, size int) []byte
 	return searchRequestJSON
 }
 
-// Realizar la búsqueda
+// Realiza la búsqueda
 func search(stream string, value string, from int, size int) ([]byte, error) {
 	searchRequestJSON := createSearchRequest(stream, value, from, size)
 
@@ -84,7 +73,7 @@ func search(stream string, value string, from int, size int) ([]byte, error) {
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Error al realizar la búsqueda: %d", response.StatusCode)
+		return nil, fmt.Errorf("Error when searching: %d", response.StatusCode)
 	}
 
 	searchResponseBytes, err := io.ReadAll(response.Body)
@@ -93,22 +82,6 @@ func search(stream string, value string, from int, size int) ([]byte, error) {
 	}
 
 	return searchResponseBytes, nil
-}
-
-func processSearchResponse(searchResponseBytes []byte) []byte {
-	searchResponse := struct {
-		Results []struct {
-			Stream     string `json:"stream"`
-			_timestamp string `json:"_timestamp"`
-		} `json:"results"`
-	}{}
-
-	err := json.Unmarshal(searchResponseBytes, &searchResponse)
-	if err != nil {
-		panic(err)
-	}
-
-	return searchResponseBytes
 }
 
 func sendSearchResponse(w http.ResponseWriter, searchResponseBytes []byte) {
@@ -152,8 +125,6 @@ func main() {
 			w.Write([]byte(err.Error()))
 			return
 		}
-
-		searchResponseBytes = processSearchResponse(searchResponseBytes)
 
 		sendSearchResponse(w, searchResponseBytes)
 	})
