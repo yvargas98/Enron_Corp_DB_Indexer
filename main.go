@@ -29,6 +29,25 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
+	fmt.Println("Starting indexer!")
+	indexerData, err := indexer.CreateIndexerFromJsonFile("./index.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// log.Println("Deleting index if exists...")
+	// deleted := indexer.DeleteIndexOnZincSearch("enron_corp")
+	// if deleted != nil {
+	// 	fmt.Println("Index doesn't exist. Creating...")
+	// }
+
+	sent := indexer.CreateIndexOnZincSearch(indexerData)
+	if sent != nil {
+		log.Fatal(sent)
+	}
+
+	log.Println("Index created successfully.")
+
 	if len(os.Args) < 2 {
 		fmt.Println("Enron Corp Directory DB Path is missing.")
 		return
@@ -36,7 +55,7 @@ func main() {
 
 	path := os.Args[1] + "/maildir/"
 
-	fmt.Println("Indexing started...")
+	fmt.Println("Start indexing, this might take a few minutes...")
 
 	id := 0
 	userList := indexer.GetFolders(path)
@@ -45,10 +64,15 @@ func main() {
 		for _, folder := range folders {
 			emailFiles := indexer.GetFiles(path + user + "/" + folder + "/")
 			for _, mail_file := range emailFiles {
-				sysFile, _ := os.Open(path + user + "/" + folder + "/" + mail_file)
+				filePath := path + user + "/" + folder + "/" + mail_file
+				sysFile, err := os.Open(filePath)
+				if err != nil {
+					fmt.Printf("Error opening file %s: %s\n", filePath, err)
+					continue
+				}
 				lines := bufio.NewScanner(sysFile)
 				id++
-				indexer.PostDataToZincSearch(indexer.FormatData(lines, id))
+				indexer.PostDataToOpenObserve(indexer.FormatData(lines, id))
 				sysFile.Close()
 			}
 		}

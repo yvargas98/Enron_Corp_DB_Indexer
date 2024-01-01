@@ -8,12 +8,11 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 )
 
 type ECEmail struct {
-	ID                        int    `json:"ID"`
+	ID                        int    `json:"id"`
 	Message_ID                string `json:"message_id"`
 	Date                      string `json:"date"`
 	From                      string `json:"from"`
@@ -34,49 +33,29 @@ type ECEmail struct {
 	Content                   string `json:"content"`
 }
 
-func GetFolders(folder_name string) []string {
-	files, err := os.ReadDir(folder_name)
+func GetFolders(folderName string) []string {
+	files, err := os.ReadDir(folderName)
 	if err != nil {
 		log.Fatal(err)
 	}
 	var folders []string
 
 	for _, file := range files {
-		filePath := filepath.Join(folder_name, file.Name())
-
 		if file.IsDir() {
-			_, err := os.Open(filePath)
-			if err != nil {
-				fmt.Printf("Error opening directory %s: %s\n", filePath, err)
-				continue
-			}
-
 			folders = append(folders, file.Name())
 		}
 	}
 	return folders
 }
 
-func GetFiles(folder_name string) []string {
-	files, err := os.ReadDir(folder_name)
+func GetFiles(folderName string) []string {
+	files, err := os.ReadDir(folderName)
 	if err != nil {
 		log.Fatal(err)
 	}
 	var fileNames []string
 	for _, file := range files {
-		filePath := filepath.Join(folder_name, file.Name())
-
-		if file.IsDir() {
-			continue
-		}
-
-		if file.Name() != ".DS_Store" {
-			sysFile, err := os.Open(filePath)
-			if err != nil {
-				fmt.Printf("Error opening file %s: %s\n", filePath, err)
-				continue
-			}
-			sysFile.Close()
+		if file.IsDir() == false && file.Name() != ".DS_Store" {
 			fileNames = append(fileNames, file.Name())
 		}
 	}
@@ -85,63 +64,78 @@ func GetFiles(folder_name string) []string {
 
 func FormatData(data_lines *bufio.Scanner, id int) ECEmail {
 	var data ECEmail
+	data.ID = id
+
 	for data_lines.Scan() {
-		data.ID = id
-		if strings.Contains(data_lines.Text(), "Message-ID:") {
-			data.Message_ID = data_lines.Text()[11:]
-		} else if strings.Contains(data_lines.Text(), "Date:") {
-			data.Date = data_lines.Text()[5:]
-		} else if strings.Contains(data_lines.Text(), "From:") {
-			data.From = data_lines.Text()[5:]
-		} else if strings.Contains(data_lines.Text(), "To:") {
-			data.To = data_lines.Text()[3:]
-		} else if strings.Contains(data_lines.Text(), "Subject:") {
-			data.Subject = data_lines.Text()[8:]
-		} else if strings.Contains(data_lines.Text(), "Cc:") {
-			data.Cc = data_lines.Text()[3:]
-		} else if strings.Contains(data_lines.Text(), "Mime-Version:") {
-			data.Mime_version = data_lines.Text()[9:]
-		} else if strings.Contains(data_lines.Text(), "Content-Type:") {
-			data.Content_Type = data_lines.Text()[9:]
-		} else if strings.Contains(data_lines.Text(), "Content-Transfer-Encoding:") {
-			data.Content_Transfer_Encoding = data_lines.Text()[9:]
-		} else if strings.Contains(data_lines.Text(), "X-From:") {
-			data.X_from = data_lines.Text()[9:]
-		} else if strings.Contains(data_lines.Text(), "X-To:") {
-			data.X_to = data_lines.Text()[9:]
-		} else if strings.Contains(data_lines.Text(), "X-cc:") {
-			data.X_cc = data_lines.Text()[6:]
-		} else if strings.Contains(data_lines.Text(), "X-bcc:") {
-			data.X_bcc = data_lines.Text()[6:]
-		} else if strings.Contains(data_lines.Text(), "X-Folder:") {
-			data.X_folder = data_lines.Text()[9:]
-		} else if strings.Contains(data_lines.Text(), "X-Origin:") {
-			data.X_origin = data_lines.Text()[9:]
-		} else if strings.Contains(data_lines.Text(), "X-FileName:") {
-			data.X_filename = data_lines.Text()[9:]
-		} else {
-			data.Content = data.Content + data_lines.Text()
+		line := data_lines.Text()
+		switch {
+		case strings.Contains(line, "Message-ID:"):
+			data.Message_ID = line[11:]
+		case strings.Contains(line, "Date:"):
+			data.Date = line[5:]
+		case strings.Contains(line, "From:"):
+			data.From = line[5:]
+		case strings.Contains(line, "To:"):
+			data.To = line[3:]
+		case strings.Contains(line, "Subject:"):
+			data.Subject = line[8:]
+		case strings.Contains(line, "Cc:"):
+			data.Cc = line[3:]
+		case strings.Contains(line, "Mime-Version:"):
+			data.Mime_version = line[9:]
+		case strings.Contains(line, "Content-Type:"):
+			data.Content_Type = line[9:]
+		case strings.Contains(line, "Content-Transfer-Encoding:"):
+			data.Content_Transfer_Encoding = line[9:]
+		case strings.Contains(line, "X-From:"):
+			data.X_from = line[9:]
+		case strings.Contains(line, "X-To:"):
+			data.X_to = line[9:]
+		case strings.Contains(line, "X-cc:"):
+			data.X_cc = line[6:]
+		case strings.Contains(line, "X-bcc:"):
+			data.X_bcc = line[6:]
+		case strings.Contains(line, "X-Folder:"):
+			data.X_folder = line[9:]
+		case strings.Contains(line, "X-Origin:"):
+			data.X_origin = line[9:]
+		case strings.Contains(line, "X-FileName:"):
+			data.X_filename = line[9:]
+		default:
+			data.Content += line
 		}
 	}
 	return data
 }
 
-func PostDataToZincSearch(data ECEmail) {
-	jsonData, _ := json.MarshalIndent(data, "", "   ")
+func PostDataToOpenObserve(data ECEmail) error {
+	jsonData, err := json.MarshalIndent(data, "", "   ")
+	if err != nil {
+		return fmt.Errorf("Error marshaling JSON: %s", err)
+	}
+
 	ZincSearchUrl := os.Getenv("INDEXER_URL")
 	ZSusername := os.Getenv("SEARCH_SERVER_USERNAME")
 	ZSpassword := os.Getenv("SEARCH_SERVER_PASSWORD")
+
 	req, err := http.NewRequest(http.MethodPost, ZincSearchUrl, bytes.NewBuffer(jsonData))
 	if err != nil {
 		log.Fatal("Error reading request.", err)
 	}
+
 	req.SetBasicAuth(ZSusername, ZSpassword)
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("Error making request: %s", err)
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("Unexpected status code: %d", resp.StatusCode)
+	}
+
+	return nil
 }

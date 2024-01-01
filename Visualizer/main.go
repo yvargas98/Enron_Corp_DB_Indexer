@@ -66,6 +66,7 @@ func search(stream string, value string, from int, size int) ([]byte, error) {
 
 	client := &http.Client{}
 	request, err := http.NewRequest("POST", url, bytes.NewReader(searchRequestJSON))
+	fmt.Println("request", request)
 	if err != nil {
 		return nil, fmt.Errorf("Error creating HTTP request %v", err)
 	}
