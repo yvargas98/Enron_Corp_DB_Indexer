@@ -6,10 +6,10 @@ export default {
 
 <script setup>
     defineProps({
-    onClick: {
-        ype: Function,
-        required: true
-    }
+        onClick: {
+            type: Function,
+            required: true
+        }
     })
 </script>
 <template>

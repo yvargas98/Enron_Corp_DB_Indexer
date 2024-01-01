@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	// "strconv"
 
@@ -40,9 +41,9 @@ func createSearchRequest(stream string, value string, from int, size int) []byte
 			TrackTotalHits bool   `json:"track_total_hits"`
 			SQLMode        string `json:"sql_mode"`
 		}{
-			SQL: fmt.Sprintf("SELECT * FROM %s WHERE match_all('%s')", stream, value),
-			// StartTime: parseTime(date),
-			// EndTime:   parseTime(date),
+			SQL:            fmt.Sprintf("SELECT * FROM %s WHERE match_all('%s')", stream, value),
+			StartTime:      1703918002074496,
+			EndTime:        time.Now().UnixMicro(),
 			From:           from,
 			Size:           size,
 			TrackTotalHits: true,
