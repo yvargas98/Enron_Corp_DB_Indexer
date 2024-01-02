@@ -35,12 +35,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// log.Println("Deleting index if exists...")
-	// deleted := indexer.DeleteIndexOnZincSearch("enron_corp")
-	// if deleted != nil {
-	// 	fmt.Println("Index doesn't exist. Creating...")
-	// }
-
 	sent := indexer.CreateIndexOnZincSearch(indexerData)
 	if sent != nil {
 		log.Fatal(sent)
@@ -84,8 +78,8 @@ func main() {
 		if err != nil {
 			log.Fatal("could not create memory profile: ", err)
 		}
-		defer f.Close() // error handling omitted for example
-		runtime.GC()    // get up-to-date statistics
+		defer f.Close()
+		runtime.GC()
 		if err := pprof.WriteHeapProfile(f); err != nil {
 			log.Fatal("could not write memory profile: ", err)
 		}

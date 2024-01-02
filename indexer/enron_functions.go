@@ -114,11 +114,11 @@ func PostDataToOpenObserve(data ECEmail) error {
 		return fmt.Errorf("Error marshaling JSON: %s", err)
 	}
 
-	ZincSearchUrl := os.Getenv("INDEXER_URL")
+	ZincSearchUrl := os.Getenv("SEARCH_SERVER_URL")
 	ZSusername := os.Getenv("SEARCH_SERVER_USERNAME")
 	ZSpassword := os.Getenv("SEARCH_SERVER_PASSWORD")
 
-	req, err := http.NewRequest(http.MethodPost, ZincSearchUrl, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest(http.MethodPost, ZincSearchUrl+"/enron_corp/_json", bytes.NewBuffer(jsonData))
 	if err != nil {
 		log.Fatal("Error reading request.", err)
 	}

@@ -12,16 +12,15 @@
 5. cd Enron_Corp_DB_Indexer
 
 6. Set env variables:
-- export SEARCH_SERVER_URL (OpenObserve API Url)
+- export SEARCH_SERVER_URL=http://localhost:5080/api/default (OpenObserve API Url) 
 - export SEARCH_SERVER_USERNAME (OpenObserve API username)
 - export SEARCH_SERVER_PASSWORD (OpenObserve API password)
-- export INDEXER_URL (OpenObserve url for create index)
 
-7.. Executes go build at terminal
+7. Executes go build at terminal
 
-8. Executes $ ./Enron_Corp_DB_Indexer path_of_database, then indexer starts. (% ./Enron_Corp_DB_Indexer ../enron_mail_20110402)
+8. Executes ./Enron_Corp_DB_Indexer path_of_database, then indexer starts. (% ./Enron_Corp_DB_Indexer ../enron_mail_20110402)
 
-9. Start profiling:
+9. When indexing finished start profiling:
 - Verify if graphviz is installed (dot -V)
 - Executes at terminal: go tool pprof -png cpu_profile.pprof > cpu_profile.png
 - Executes at terminal: go tool pprof -png mem_profile.pprof > mem_profile.png
@@ -38,6 +37,3 @@
 14. Executes ./searcher -port 3000
 
 15. Open http://localhost:3000/ and start to search
-
-
-

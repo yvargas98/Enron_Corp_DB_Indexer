@@ -74,7 +74,7 @@ func search(stream string, value string, from int, size int) ([]byte, error) {
 	}
 
 	client := &http.Client{}
-	request, err := http.NewRequest("POST", url, bytes.NewReader(searchRequestJSON))
+	request, err := http.NewRequest("POST", url+"/_search", bytes.NewReader(searchRequestJSON))
 	if err != nil {
 		return nil, fmt.Errorf("Error creating HTTP request %v", err)
 	}
@@ -151,7 +151,7 @@ func main() {
 		sendSearchResponse(w, searchResponseBytes)
 	})
 
-	fmt.Printf("Server is running at port %v\n", port)
+	fmt.Printf("Mamuro is running in http://localhost:%v\n", port)
 	http.ListenAndServe(":"+port, router)
 }
 

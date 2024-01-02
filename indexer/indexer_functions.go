@@ -3,7 +3,6 @@ package indexer
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -77,13 +76,17 @@ func CreateIndexOnZincSearch(indexerData IndexerData) error {
 		log.Fatal(err)
 	}
 
-	req, err := http.NewRequest("POST", "http://localhost:5080/api/default/enron_corp/_json", bytes.NewBuffer(jsonData))
+	ZincSearchUrl := os.Getenv("SEARCH_SERVER_URL")
+	ZSusername := os.Getenv("SEARCH_SERVER_USERNAME")
+	ZSpassword := os.Getenv("SEARCH_SERVER_PASSWORD")
+
+	req, err := http.NewRequest("POST", ZincSearchUrl+"/enron_corp/_json", bytes.NewBuffer(jsonData))
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth("yvargas.vargasgodoy@gmail.com", "@Va221998")
+	req.SetBasicAuth(ZSusername, ZSpassword)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -96,29 +99,6 @@ func CreateIndexOnZincSearch(indexerData IndexerData) error {
 		log.Fatalf("failed to create indexer, status code: %d", resp.StatusCode)
 	}
 
-	return nil
-}
-
-func DeleteIndexOnZincSearch(indexName string) error {
-	req, err := http.NewRequest("DELETE", "http://localhost:5080/api/default/"+indexName, nil)
-	if err != nil {
-		return err
-	}
-
-	req.SetBasicAuth("yvargas.vargasgodoy@gmail.com", "@Va221998")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to delete indexer, status code: %d", resp.StatusCode)
-	}
-
-	log.Println("Index deleted successfully")
 	return nil
 }
 
