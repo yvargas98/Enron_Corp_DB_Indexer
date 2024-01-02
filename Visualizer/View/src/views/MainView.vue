@@ -5,18 +5,20 @@ import Button from "../components/Button.vue";
 import TableHeaders from "../components/TableHeaders.vue";
 import TableBody from "../components/TableBody.vue";
 import Pagination from "../components/Pagination.vue";
+import EmailDetails from "../components/EmailDetails.vue";
 
 import { SearchServices } from "../services/service.js"
 
 export default {
     components: {
-        MamuroHeader,
-        Input,
-        Button,
-        TableHeaders,
-        TableBody,
-        Pagination
-    },
+    MamuroHeader,
+    Input,
+    Button,
+    TableHeaders,
+    TableBody,
+    Pagination,
+    EmailDetails
+},
     created() {
         this.searchService = new SearchServices()
     },
@@ -29,11 +31,15 @@ export default {
             offset: 1,
             limit: 10,
             totalResults: 0,
-            emails: []
+            emails: [],
+            showDetail: false,
+            selectedEmail: null,
+            loading: false
         }
     },
     methods: {
         async searchContents() {
+            this.loading = true
             const request = {
                 stream: "enron_corp",
                 value: this.value,
@@ -44,7 +50,7 @@ export default {
                 const content = await this.searchService.searchContents(request)
                 const formatEmails = content.map((item) => ({
                     content: item.content,
-                    date: item.data,
+                    date: item.date,
                     from: item.from,
                     subject: item.subject,
                     to: item.to,
@@ -59,6 +65,7 @@ export default {
         },
         setEmails(newEmails) {
             this.emails = [...newEmails]
+            this.loading = false;
         },
         created() {
             this.emails = [""]
@@ -70,6 +77,14 @@ export default {
         handleSearch() {
             this.offset = 1;
             this.searchContents();
+        },
+        showEmailDetail(email) {
+            this.selectedEmail = email;
+            this.showDetail = true;
+        },
+        closeEmailDetail() {
+            this.showDetail = false;
+            this.selectedEmail = null;
         }
     }
 }
@@ -78,7 +93,7 @@ export default {
 <template>
     <MamuroHeader />
     <section class="container px-4 mx-auto">
-        <div class="mt-6 md:flex md:items-center md:justify-between">
+        <div v-show="!showDetail" class="mt-6 md:flex md:items-center md:justify-between">
             <div class="relative flex items-center mt-4 md:mt-0">
                 <span class="absolute">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
@@ -91,20 +106,23 @@ export default {
                 <Button :onClick="handleSearch"></Button>
             </div>
         </div>
-        <div class="flex flex-col mt-6">
-            <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-                <div class="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
-                    <div class="overflow-hidden border border-gray-200 dark:border-gray-700 md:rounded-lg">
-                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                            <TableHeaders />
-                            <TableBody :data="this.emails" :value="this.value" />
-                        </table>
+        <div v-show="!showDetail">
+            <div class="flex flex-col mt-6">
+                <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+                    <div class="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
+                        <div class="overflow-hidden border border-gray-200 dark:border-gray-700 md:rounded-lg">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <TableHeaders />
+                                <TableBody :data="this.emails" :value="this.value" @showDetail="showEmailDetail" :loading="this.loading"/>
+                            </table>
+                        </div>
                     </div>
                 </div>
+                <Pagination :offset="offset" :limit="limit" :totalResults="totalResults" @update:offset="updateOffset">
+                </Pagination>
             </div>
-            <Pagination :offset="offset" :limit="limit" :totalResults="totalResults" @update:offset="updateOffset">
-            </Pagination>
         </div>
+        <EmailDetails v-if="showDetail" :selectedEmail="selectedEmail" @closeDetail="closeEmailDetail"/>
     </section>
 </template>
 
