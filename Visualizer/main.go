@@ -61,8 +61,17 @@ func search(stream string, value string, from int, size int) ([]byte, error) {
 	}
 
 	url := os.Getenv("SEARCH_SERVER_URL")
+	if url == "" {
+		return nil, fmt.Errorf("SEARCH_SERVER_URL environment variable is not set")
+	}
 	username := os.Getenv("SEARCH_SERVER_USERNAME")
+	if url == "" {
+		return nil, fmt.Errorf("SEARCH_SERVER_USERNAME environment variable is not set")
+	}
 	password := os.Getenv("SEARCH_SERVER_PASSWORD")
+	if url == "" {
+		return nil, fmt.Errorf("SEARCH_SERVER_PASSWORD environment variable is not set")
+	}
 
 	client := &http.Client{}
 	request, err := http.NewRequest("POST", url, bytes.NewReader(searchRequestJSON))
