@@ -34,7 +34,8 @@ export default {
             emails: [],
             showDetail: false,
             selectedEmail: null,
-            loading: false
+            loading: false,
+            error: false,
         }
     },
     methods: {
@@ -72,11 +73,17 @@ export default {
         },
         async updateOffset(newOffset) {
             this.offset = newOffset;
-            await this.searchContents();
+            await this.searchContents().catch(() => {
+                this.loading = false
+                this.error = true
+            });
         },
         handleSearch() {
             this.offset = 1;
-            this.searchContents();
+            this.searchContents().catch(() => {
+                this.loading = false
+                this.error = true
+            });
         },
         showEmailDetail(email) {
             this.selectedEmail = email;
@@ -113,7 +120,7 @@ export default {
                         <div class="overflow-hidden border border-gray-200 dark:border-gray-700 md:rounded-lg">
                             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                                 <TableHeaders />
-                                <TableBody :data="this.emails" :value="this.value" @showDetail="showEmailDetail" :loading="this.loading"/>
+                                <TableBody :data="this.emails" :value="this.value" @showDetail="showEmailDetail" :loading="this.loading" :error="this.error"/>
                             </table>
                         </div>
                     </div>

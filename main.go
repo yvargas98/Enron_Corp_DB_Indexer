@@ -2,7 +2,6 @@ package main
 
 import (
 	"Enron_Corp_DB_Indexer/indexer"
-	"bufio"
 	"flag"
 	"fmt"
 	"log"
@@ -12,35 +11,22 @@ import (
 	"runtime/pprof"
 )
 
-var cpuprofile = flag.String("cpuprofile", "cpu_profile.pprof", "write cpu profile to `file`")
-var memprofile = flag.String("memprofile", "mem_profile.pprof", "write memory profile to `file`")
+var cpuprofile = flag.String("cpuprofile", "cpu_profile.pprof", "write cpu profile to cpu_profile.pprof")
+var memprofile = flag.String("memprofile", "mem_profile.pprof", "write memory profile to mem_profile.pprof")
 
 func main() {
 	flag.Parse()
 	if *cpuprofile != "" {
 		f, err := os.Create(*cpuprofile)
 		if err != nil {
-			log.Fatal("could not create CPU profile: ", err)
+			log.Fatal("Could not create CPU profile: ", err)
 		}
-		defer f.Close() // error handling omitted
+		defer f.Close()
 		if err := pprof.StartCPUProfile(f); err != nil {
-			log.Fatal("could not start CPU profile: ", err)
+			log.Fatal("Could not start CPU profile: ", err)
 		}
 		defer pprof.StopCPUProfile()
 	}
-
-	fmt.Println("Starting indexer!")
-	indexerData, err := indexer.CreateIndexerFromJsonFile("./index.json")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	sent := indexer.CreateIndexOnZincSearch(indexerData)
-	if sent != nil {
-		log.Fatal(sent)
-	}
-
-	log.Println("Index created successfully.")
 
 	if len(os.Args) < 2 {
 		fmt.Println("Enron Corp Directory DB Path is missing.")
@@ -59,15 +45,13 @@ func main() {
 			emailFiles := indexer.GetFiles(path + user + "/" + folder + "/")
 			for _, mail_file := range emailFiles {
 				filePath := path + user + "/" + folder + "/" + mail_file
-				sysFile, err := os.Open(filePath)
+				data, err := indexer.ProcessFile(filePath, id)
 				if err != nil {
-					fmt.Printf("Error opening file %s: %s\n", filePath, err)
+					fmt.Printf("Error processing file %s: %s\n", filePath, err)
 					continue
 				}
-				lines := bufio.NewScanner(sysFile)
 				id++
-				indexer.PostDataToOpenObserve(indexer.FormatData(lines, id))
-				sysFile.Close()
+				indexer.PostDataToOpenObserve(data)
 			}
 		}
 	}

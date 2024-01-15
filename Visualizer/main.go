@@ -35,7 +35,7 @@ func createSearchRequest(stream string, value string, from int, size int) ([]byt
 			TrackTotalHits bool   `json:"track_total_hits"`
 			SQLMode        string `json:"sql_mode"`
 		}{
-			SQL:            fmt.Sprintf("SELECT * FROM %s WHERE match_all('%s') ORDER BY id", stream, value),
+			SQL:            fmt.Sprintf("SELECT * FROM %s WHERE match_all_ignore_case('%s') ORDER BY id", stream, value),
 			StartTime:      1703900002074496,
 			EndTime:        time.Now().UnixMicro(),
 			From:           from,
@@ -65,11 +65,11 @@ func search(stream string, value string, from int, size int) ([]byte, error) {
 		return nil, fmt.Errorf("SEARCH_SERVER_URL environment variable is not set")
 	}
 	username := os.Getenv("SEARCH_SERVER_USERNAME")
-	if url == "" {
+	if username == "" {
 		return nil, fmt.Errorf("SEARCH_SERVER_USERNAME environment variable is not set")
 	}
 	password := os.Getenv("SEARCH_SERVER_PASSWORD")
-	if url == "" {
+	if password == "" {
 		return nil, fmt.Errorf("SEARCH_SERVER_PASSWORD environment variable is not set")
 	}
 

@@ -13,6 +13,10 @@ export default {
         loading: {
             type: Boolean,
             required: true
+        },
+        error: {
+            type: Boolean,
+            required: true
         }
     },
     data() {
@@ -33,11 +37,11 @@ export default {
                 const paragraphs = text.split('\n\n');
                 const formattedContent = paragraphs.map(paragraph => `${paragraph}`).join('');
                 const shortContent = (queryPosition > 40 ? "..." : "") + formattedContent.slice(queryPosition < 40 ? 0 : queryPosition - 40, queryPosition + 85) + "...";
-                const highlightedContent = shortContent.replace(this.value, `<span style="font-weight: bold;" class="bg-blue-200">${this.value}</span>`);
+                const highlightedContent = shortContent.replace(new RegExp(this.value, "gi"), `<span style="font-weight: bold;" class="bg-blue-200">$&</span>`);
                 return highlightedContent;
             }
             else {
-                const highlightedContent = text.replace(this.value, `<span style="font-weight: bold;" class="bg-blue-200">${this.value}</span>`);
+                const highlightedContent = text.replace(new RegExp(this.value, "gi"), `<span style="font-weight: bold;" class="bg-blue-200">$&</span>`);
                 return highlightedContent;
             }
         },
@@ -51,10 +55,17 @@ export default {
 
 <template>
     <tbody>
-        <tr v-if="emails.length === 0 && loading === false">
+        <tr v-if="emails.length === 0 && loading === false && error === false">
             <td class="px-4 py-4 text-sm" colspan="4">
                 <div class="text-gray-700 dark:text-gray-500 text-center">
                     No result found.
+                </div>
+            </td>
+        </tr>
+        <tr v-if="loading === false && error === true">
+            <td class="px-4 py-4 text-sm" colspan="4">
+                <div class="text-gray-700 dark:text-gray-500 text-center">
+                    Error searching content.
                 </div>
             </td>
         </tr>

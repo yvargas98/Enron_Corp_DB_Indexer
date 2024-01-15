@@ -15,6 +15,7 @@
 - export SEARCH_SERVER_URL=http://localhost:5080/api/default (OpenObserve API Url) 
 - export SEARCH_SERVER_USERNAME (OpenObserve API username)
 - export SEARCH_SERVER_PASSWORD (OpenObserve API password)
+- export INDEX_NAME (stream name)
 
 7. Executes go build at terminal
 
