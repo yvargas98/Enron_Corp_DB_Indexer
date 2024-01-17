@@ -162,27 +162,35 @@ func parseHeaders(data []byte) (http.Header, error) {
 	return header, nil
 }
 
-func PostDataToOpenObserve(data ECEmail) error {
+func getRequiredEnvVar(name string) (string, error) {
+	value := os.Getenv(name)
+	if value == "" {
+		return "", fmt.Errorf("%s environment variable is not set", name)
+	}
+	return value, nil
+}
+
+func PostDataToOpenObserve(data []ECEmail) error {
 	jsonData, err := json.MarshalIndent(data, "", "   ")
 	if err != nil {
 		return fmt.Errorf("Error marshaling JSON: %s", err)
 	}
 
-	ZincSearchUrl := os.Getenv("SEARCH_SERVER_URL")
-	if ZincSearchUrl == "" {
-		return fmt.Errorf("SEARCH_SERVER_URL environment variable is not set")
+	ZincSearchUrl, err := getRequiredEnvVar("SEARCH_SERVER_URL")
+	if err != nil {
+		return err
 	}
-	ZSusername := os.Getenv("SEARCH_SERVER_USERNAME")
-	if ZSusername == "" {
-		return fmt.Errorf("SEARCH_SERVER_USERNAME environment variable is not set")
+	ZSusername, err := getRequiredEnvVar("SEARCH_SERVER_USERNAME")
+	if err != nil {
+		return err
 	}
-	ZSpassword := os.Getenv("SEARCH_SERVER_PASSWORD")
-	if ZSpassword == "" {
-		return fmt.Errorf("SEARCH_SERVER_PASSWORD environment variable is not set")
+	ZSpassword, err := getRequiredEnvVar("SEARCH_SERVER_PASSWORD")
+	if err != nil {
+		return err
 	}
-	indexName := os.Getenv("INDEX_NAME")
-	if indexName == "" {
-		return fmt.Errorf("INDEX_NAME environment variable is not set")
+	indexName, err := getRequiredEnvVar("INDEX_NAME")
+	if err != nil {
+		return err
 	}
 
 	req, err := http.NewRequest(http.MethodPost, ZincSearchUrl+"/"+indexName+"/_json", bytes.NewBuffer(jsonData))

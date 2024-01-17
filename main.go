@@ -38,6 +38,8 @@ func main() {
 	fmt.Println("Start indexing, this might take a few minutes...")
 
 	id := 0
+	batchSize := 100
+	var dataBatch []indexer.ECEmail
 	userList := indexer.GetFolders(path)
 	for _, user := range userList {
 		folders := indexer.GetFolders(path + user)
@@ -50,10 +52,26 @@ func main() {
 					fmt.Printf("Error processing file %s: %s\n", filePath, err)
 					continue
 				}
+
+				dataBatch = append(dataBatch, data)
+
+				// Enviar un lote de 10 archivos
+				if len(dataBatch) == batchSize {
+					err := indexer.PostDataToOpenObserve(dataBatch)
+					if err != nil {
+						fmt.Println("ERROR: ", err)
+						break
+					}
+					dataBatch = nil // Limpiar el lote después de enviar
+				}
 				id++
-				indexer.PostDataToOpenObserve(data)
 			}
 		}
+	}
+
+	// Enviar los datos restantes, si los hay
+	if len(dataBatch) > 0 {
+		indexer.PostDataToOpenObserve(dataBatch)
 	}
 	fmt.Println("Indexing finished!!!!")
 
