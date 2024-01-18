@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -32,41 +31,56 @@ type ECEmail struct {
 	Content                   string `json:"content"`
 }
 
-func GetFolders(folderName string) []string {
+type IndexerError struct {
+	Message string
+	Err     error
+}
+
+func (e *IndexerError) Error() string { //método de la estructura IndexerError
+	return fmt.Sprintf("%s: %s", e.Message, e.Err)
+}
+
+func GetFolders(folderName string) ([]string, error) {
 	files, err := os.ReadDir(folderName)
 	if err != nil {
-		log.Fatal(err)
+		return nil, &IndexerError{Message: "Error getting folder", Err: err}
 	}
-	var folders []string
 
+	var folders []string
 	for _, file := range files {
 		if file.IsDir() {
 			folders = append(folders, file.Name())
 		}
 	}
-	return folders
+
+	return folders, nil
 }
 
-func GetFiles(folderName string) []string {
+func GetFiles(folderName string) ([]string, error) {
 	files, err := os.ReadDir(folderName)
 	if err != nil {
-		log.Fatal(err)
+		return nil, &IndexerError{Message: "Error reading file", Err: err}
 	}
+
 	var fileNames []string
 	for _, file := range files {
 		if file.IsDir() == false && file.Name() != ".DS_Store" {
 			fileNames = append(fileNames, file.Name())
 		}
 	}
-	return fileNames
+
+	return fileNames, nil
 }
 
 func ProcessFile(path string, id int) (ECEmail, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
+		return ECEmail{}, &IndexerError{Message: "Error procesing file", Err: err}
+	}
+	mimeData, err := formatEmailContent(content)
+	if err != nil {
 		return ECEmail{}, err
 	}
-	mimeData := extractMIMEFields(content)
 	return ECEmail{
 		ID:                        id,
 		Message_ID:                mimeData["Message-ID"],
@@ -90,118 +104,71 @@ func ProcessFile(path string, id int) (ECEmail, error) {
 	}, nil
 }
 
-func extractMIMEFields(content []byte) map[string]string {
-	headers := make(map[string]string) //Mapa clave - valor
-	var headerBuffer bytes.Buffer
+func formatEmailContent(data []byte) (map[string]string, error) {
+	headers := make(map[string]string)
+	var key, value string
 	var bodyBuffer bytes.Buffer
-
 	inHeaders := true
 
-	for _, line := range bytes.Split(content, []byte{'\n'}) { //divide el archivo del email en lineas
+	for _, line := range bytes.Split(data, []byte{'\n'}) {
 		if len(line) == 0 {
 			inHeaders = false
 			continue
 		}
 
-		if inHeaders {
-			headerBuffer.Write(line) //lineas de encabezados del email
-			headerBuffer.WriteByte('\n')
-		} else {
+		parts := strings.SplitN(string(line), ":", 2) //header nuevo
+		if len(parts) == 2 {
+			key = strings.TrimSpace(parts[0]) //para remover espacio en blanco si existe
+			value = strings.TrimSpace(parts[1])
+			headers[key] = value
+		}
+
+		if !inHeaders {
 			bodyBuffer.Write(line) //mensaje del email
 			bodyBuffer.WriteByte('\n')
 		}
+
+		headers["Text"] = bodyBuffer.String()
 	}
-
-	header, err := parseHeaders(headerBuffer.Bytes())
-	if err != nil {
-		log.Println("Error parsing MIME headers:", err)
-		return headers
-	}
-
-	headers["From"] = header.Get("From")
-	headers["To"] = header.Get("To")
-	headers["Subject"] = header.Get("Subject")
-	headers["Message-ID"] = header.Get("Message-ID")
-	headers["Date"] = header.Get("Date")
-	headers["Content-Type"] = header.Get("Content-Type")
-	headers["Mime-Version"] = header.Get("Mime-Version")
-	headers["Content-Transfer-Encoding"] = header.Get("Content-Transfer-Encoding")
-	headers["X-From"] = header.Get("X-From")
-	headers["X-To"] = header.Get("X-To")
-	headers["X-cc"] = header.Get("X-cc")
-	headers["X-bcc"] = header.Get("X-bcc")
-	headers["X-Folder"] = header.Get("X-Folder")
-	headers["X-Origin"] = header.Get("X-Origin")
-	headers["X-Filename"] = header.Get("X-Filename")
-	headers["Text"] = bodyBuffer.String()
-
-	return headers
+	return headers, nil
 }
 
-func parseHeaders(data []byte) (http.Header, error) {
-	header := make(http.Header)
-	var key, value string
-
-	for _, line := range strings.Split(string(data), "\n") {
-		if len(line) == 0 {
-			continue
-		}
-		if line[0] == ' ' || line[0] == '\t' {
-			if key != "" { //linea de continuación de un header
-				header.Add(key, line)
-			}
-		} else {
-			parts := strings.SplitN(line, ":", 2) //header nuevo
-			if len(parts) == 2 {
-				key = strings.TrimSpace(parts[0]) //para remover espacio en blanco si existe
-				value = strings.TrimSpace(parts[1])
-				header.Set(key, value)
-			}
-		}
+func getRequiredEnvVar(name string) string {
+	value := os.Getenv(name)
+	if value == "" {
+		panic(&IndexerError{Message: "An error ocurred", Err: fmt.Errorf("%s environment variable is not set", name)})
 	}
-	return header, nil
+	return value
 }
 
-func PostDataToOpenObserve(data ECEmail) error {
-	jsonData, err := json.MarshalIndent(data, "", "   ")
+func PostDataToOpenObserve(data []ECEmail) error {
+	jsonData, err := json.Marshal(data)
 	if err != nil {
-		return fmt.Errorf("Error marshaling JSON: %s", err)
+		return &IndexerError{Message: "Error marshaling JSON ", Err: err}
 	}
 
-	ZincSearchUrl := os.Getenv("SEARCH_SERVER_URL")
-	if ZincSearchUrl == "" {
-		return fmt.Errorf("SEARCH_SERVER_URL environment variable is not set")
-	}
-	ZSusername := os.Getenv("SEARCH_SERVER_USERNAME")
-	if ZSusername == "" {
-		return fmt.Errorf("SEARCH_SERVER_USERNAME environment variable is not set")
-	}
-	ZSpassword := os.Getenv("SEARCH_SERVER_PASSWORD")
-	if ZSpassword == "" {
-		return fmt.Errorf("SEARCH_SERVER_PASSWORD environment variable is not set")
-	}
-	indexName := os.Getenv("INDEX_NAME")
-	if indexName == "" {
-		return fmt.Errorf("INDEX_NAME environment variable is not set")
-	}
+	openObserveUrl := getRequiredEnvVar("SEARCH_SERVER_URL")
+	openObserveUsername := getRequiredEnvVar("SEARCH_SERVER_USERNAME")
+	openObservePassword := getRequiredEnvVar("SEARCH_SERVER_PASSWORD")
+	indexName := getRequiredEnvVar("INDEX_NAME")
 
-	req, err := http.NewRequest(http.MethodPost, ZincSearchUrl+"/"+indexName+"/_json", bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest(http.MethodPost, openObserveUrl+"/"+indexName+"/_json", bytes.NewBuffer(jsonData))
 	if err != nil {
-		log.Fatal("Error reading request.", err)
+		return &IndexerError{Message: "Error creating request", Err: err}
 	}
 
-	req.SetBasicAuth(ZSusername, ZSpassword)
+	req.SetBasicAuth(openObserveUsername, openObservePassword)
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("Error making request: %s", err)
+		return &IndexerError{Message: fmt.Sprintf("Error making request, status code %s and error %s ", resp.Status, err)}
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("Unexpected status code: %d", resp.StatusCode)
+		return &IndexerError{Message: "An error ocurred", Err: fmt.Errorf("Unexpected status code: %d", resp.StatusCode)}
 	}
 
 	return nil

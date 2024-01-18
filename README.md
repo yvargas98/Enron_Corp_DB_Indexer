@@ -22,6 +22,7 @@
 8. Executes ./Enron_Corp_DB_Indexer path_of_database, then indexer starts. (% ./Enron_Corp_DB_Indexer ../enron_mail_20110402)
 
 9. When indexing finished start profiling:
+- go tool pprof cpu_profile cpu_profile.pprof
 - Verify if graphviz is installed (dot -V)
 - Executes at terminal: go tool pprof -png cpu_profile.pprof > cpu_profile.png
 - Executes at terminal: go tool pprof -png mem_profile.pprof > mem_profile.png
