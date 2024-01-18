@@ -3,22 +3,25 @@ const url = `${main_url}api/default`
 
 export class SearchServices {
     constructor() {
-        this.requestOption = {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        }
     }
 
     async searchContents(values) {
         try {
             const searchUrl = new URL(`${url}/_search`);
-            Object.keys(values).forEach((key) => {
-                searchUrl.searchParams.append(key, values[key]);
-            });
+            requestOption = {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: {
+                    stream: values.stream,
+                    value: values.value,
+                    from: values.from,
+                    size: values.size
+                }
+            }
 
-            const response = await fetch(searchUrl.toString(), this.requestOption);
+            const response = await fetch(searchUrl.toString(), requestOption);
             if (!response.ok) {
                 throw new Error(response.status);
             }

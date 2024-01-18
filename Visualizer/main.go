@@ -8,41 +8,40 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-func createSearchRequest(stream string, value string, from int, size int) ([]byte, error) {
-	searchRequest := struct {
-		Query struct {
-			SQL            string `json:"sql"`
-			StartTime      int64  `json:"start_time"`
-			EndTime        int64  `json:"end_time"`
-			From           int    `json:"from"`
-			Size           int    `json:"size"`
-			TrackTotalHits bool   `json:"track_total_hits"`
-			SQLMode        string `json:"sql_mode"`
-		} `json:"query"`
-	}{
-		Query: struct {
-			SQL            string `json:"sql"`
-			StartTime      int64  `json:"start_time"`
-			EndTime        int64  `json:"end_time"`
-			From           int    `json:"from"`
-			Size           int    `json:"size"`
-			TrackTotalHits bool   `json:"track_total_hits"`
-			SQLMode        string `json:"sql_mode"`
-		}{
-			SQL:            fmt.Sprintf("SELECT * FROM %s WHERE match_all_ignore_case('%s') ORDER BY id", stream, value),
-			StartTime:      1703900002074496,
-			EndTime:        time.Now().UnixMicro(),
-			From:           from,
-			Size:           size,
-			TrackTotalHits: true,
-			SQLMode:        "full",
-		},
+type Query struct {
+	Term  string `json:"term"`
+	Field string `json:"field"`
+}
+
+type SearchRequest struct {
+	SearchType string   `json:"search_type"`
+	Query      Query    `json:"query"`
+	SortFields []string `json:"sort_fields"`
+	From       int      `json:"from"`
+	MaxResults int      `json:"max_results"`
+	Source     []string `json:"_source"`
+}
+
+func createSearchRequest(value string, from int, size int) ([]byte, error) {
+	if value == "" {
+		return nil, fmt.Errorf("Value cannot be empty")
+	}
+	query := Query{
+		Term:  value,
+		Field: "_all",
+	}
+	searchRequest := SearchRequest{
+		SearchType: "match",
+		Query:      query,
+		SortFields: []string{"id"},
+		From:       from,
+		MaxResults: size,
+		Source:     []string{"from", "to", "date", "content"},
 	}
 
 	searchRequestJSON, err := json.Marshal(searchRequest)
@@ -55,7 +54,7 @@ func createSearchRequest(stream string, value string, from int, size int) ([]byt
 
 // Realiza la búsqueda
 func search(stream string, value string, from int, size int) ([]byte, error) {
-	searchRequestJSON, err := createSearchRequest(stream, value, from, size)
+	searchRequestJSON, err := createSearchRequest(value, from, size)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +73,7 @@ func search(stream string, value string, from int, size int) ([]byte, error) {
 	}
 
 	client := &http.Client{}
-	request, err := http.NewRequest("POST", url+"/_search", bytes.NewReader(searchRequestJSON))
+	request, err := http.NewRequest("POST", url+"/"+stream+"/_search", bytes.NewReader(searchRequestJSON))
 	if err != nil {
 		return nil, fmt.Errorf("Error creating HTTP request %v", err)
 	}

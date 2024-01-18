@@ -31,6 +31,11 @@ type ECEmail struct {
 	Content                   string `json:"content"`
 }
 
+type bulkv2Data struct {
+	Index   string    `json:"index"`
+	Records []ECEmail `json:"records"`
+}
+
 type IndexerError struct {
 	Message string
 	Err     error
@@ -142,17 +147,22 @@ func getRequiredEnvVar(name string) string {
 }
 
 func PostDataToOpenObserve(data []ECEmail) error {
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		return &IndexerError{Message: "Error marshaling JSON ", Err: err}
-	}
-
 	openObserveUrl := getRequiredEnvVar("SEARCH_SERVER_URL")
 	openObserveUsername := getRequiredEnvVar("SEARCH_SERVER_USERNAME")
 	openObservePassword := getRequiredEnvVar("SEARCH_SERVER_PASSWORD")
 	indexName := getRequiredEnvVar("INDEX_NAME")
 
-	req, err := http.NewRequest(http.MethodPost, openObserveUrl+"/"+indexName+"/_json", bytes.NewBuffer(jsonData))
+	bulkv2Data := bulkv2Data{
+		Index:   indexName,
+		Records: data,
+	}
+
+	jsonData, err := json.Marshal(bulkv2Data)
+	if err != nil {
+		return &IndexerError{Message: "Error marshaling JSON ", Err: err}
+	}
+
+	req, err := http.NewRequest(http.MethodPost, openObserveUrl+"/_bulkv2", bytes.NewBuffer(jsonData))
 	if err != nil {
 		return &IndexerError{Message: "Error creating request", Err: err}
 	}

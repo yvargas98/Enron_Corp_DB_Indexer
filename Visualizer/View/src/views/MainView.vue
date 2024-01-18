@@ -24,6 +24,7 @@ export default {
     },
     async mounted() {
         // await this.searchContents()
+        console.log(import.meta.env.VITE_INDEX_NAME)
     },
     data() {
         return {
@@ -42,7 +43,7 @@ export default {
         async searchContents() {
             this.loading = true
             const request = {
-                stream: "enron_corp",
+                stream: import.meta.env.VITE_INDEX_NAME,
                 value: this.value,
                 from: this.offset,
                 size: this.limit
