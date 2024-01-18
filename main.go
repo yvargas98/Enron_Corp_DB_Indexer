@@ -3,7 +3,6 @@ package main
 import (
 	"Enron_Corp_DB_Indexer/indexer"
 	"flag"
-	"fmt"
 	"log"
 	_ "net/http/pprof"
 	"os"
@@ -29,27 +28,36 @@ func main() {
 	}
 
 	if len(os.Args) < 2 {
-		fmt.Println("Enron Corp Directory DB Path is missing.")
+		log.Println("Enron Corp Directory DB Path is missing.")
 		return
 	}
 
 	path := os.Args[1] + "/maildir/"
 
-	fmt.Println("Start indexing, this might take a few minutes...")
+	log.Println("Start indexing, this might take a few minutes...")
 
 	id := 0
 	batchSize := 100
 	var dataBatch []indexer.ECEmail
-	userList := indexer.GetFolders(path)
+	userList, err := indexer.GetFolders(path)
+	if err != nil {
+		log.Println("Error: ", err)
+	}
 	for _, user := range userList {
-		folders := indexer.GetFolders(path + user)
+		folders, err := indexer.GetFolders(path + user)
+		if err != nil {
+			log.Println("Error: ", err)
+		}
 		for _, folder := range folders {
-			emailFiles := indexer.GetFiles(path + user + "/" + folder + "/")
+			emailFiles, err := indexer.GetFiles(path + user + "/" + folder + "/")
+			if err != nil {
+				log.Println("Error: ", err)
+			}
 			for _, mail_file := range emailFiles {
 				filePath := path + user + "/" + folder + "/" + mail_file
 				data, err := indexer.ProcessFile(filePath, id)
 				if err != nil {
-					fmt.Printf("Error processing file %s: %s\n", filePath, err)
+					log.Printf("Error processing file %s: %s\n", filePath, err)
 					continue
 				}
 
@@ -59,8 +67,7 @@ func main() {
 				if len(dataBatch) == batchSize {
 					err := indexer.PostDataToOpenObserve(dataBatch)
 					if err != nil {
-						fmt.Println("ERROR: ", err)
-						break
+						panic(err)
 					}
 					dataBatch = nil // Limpiar el lote después de enviar
 				}
@@ -73,7 +80,7 @@ func main() {
 	if len(dataBatch) > 0 {
 		indexer.PostDataToOpenObserve(dataBatch)
 	}
-	fmt.Println("Indexing finished!!!!")
+	log.Println("Indexing finished!!!!")
 
 	if *memprofile != "" {
 		f, err := os.Create(*memprofile)

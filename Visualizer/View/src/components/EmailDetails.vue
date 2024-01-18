@@ -5,17 +5,17 @@
         </h2>
         <div class="grid grid-cols-1">
             <div class="mb-6">
-                <p class="font-medium text-gray-700"><strong>Date:</strong> {{ selectedEmail.date }}</p>
+                <p class="text-gray-700"><strong>Date:</strong> {{ selectedEmail.date }}</p>
             </div>
             <div class="mb-6">
-                <p class="font-medium text-gray-700"><strong>From:</strong> {{ selectedEmail.from }}</p>
+                <p class="text-gray-700"><strong>From:</strong> {{ selectedEmail.from }}</p>
             </div>
             <div class="mb-6">
-                <p class="font-medium text-gray-700"><strong>To:</strong> {{ selectedEmail.to }}</p>
+                <p class="text-gray-700"><strong>To:</strong> {{ selectedEmail.to }}</p>
             </div>
         </div>
         <p class="mb-6">
-            <strong class="font-medium text-gray-700"><strong>Content:</strong>:</strong>
+            <strong class=" text-gray-700 font-bold">Content:</strong>
             <br />
             {{ selectedEmail.content }}
         </p>
