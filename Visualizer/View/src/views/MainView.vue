@@ -42,14 +42,14 @@ export default {
     methods: {
         async searchContents() {
             this.loading = true
-            const request = {
+            const requestValues = {
                 stream: import.meta.env.VITE_INDEX_NAME,
                 value: this.value,
                 from: this.offset,
                 size: this.limit
             }
             if (this.value != "") {
-                const content = await this.searchService.searchContents(request)
+                const content = await this.searchService.searchContents(requestValues)
                 const formatEmails = content.map((item) => ({
                     content: item.content,
                     date: item.date,

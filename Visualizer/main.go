@@ -52,25 +52,33 @@ func createSearchRequest(value string, from int, size int) ([]byte, error) {
 	return searchRequestJSON, nil
 }
 
-// Realiza la búsqueda
+func getRequiredEnvVars(vars []string) (map[string]string, error) {
+	envVars := make(map[string]string)
+
+	for _, varName := range vars {
+		varValue := os.Getenv(varName)
+
+		if varValue == "" {
+			return nil, fmt.Errorf("Environment variable %s is not set", varName)
+		}
+
+		envVars[varName] = varValue
+	}
+
+	return envVars, nil
+}
+
 func search(stream string, value string, from int, size int) ([]byte, error) {
 	searchRequestJSON, err := createSearchRequest(value, from, size)
 	if err != nil {
 		return nil, err
 	}
 
-	url := os.Getenv("SEARCH_SERVER_URL")
-	if url == "" {
-		return nil, fmt.Errorf("SEARCH_SERVER_URL environment variable is not set")
+	envVars, err := getRequiredEnvVars([]string{"SEARCH_SERVER_URL", "SEARCH_SERVER_USERNAME", "SEARCH_SERVER_PASSWORD"})
+	if err != nil {
+		return nil, err
 	}
-	username := os.Getenv("SEARCH_SERVER_USERNAME")
-	if username == "" {
-		return nil, fmt.Errorf("SEARCH_SERVER_USERNAME environment variable is not set")
-	}
-	password := os.Getenv("SEARCH_SERVER_PASSWORD")
-	if password == "" {
-		return nil, fmt.Errorf("SEARCH_SERVER_PASSWORD environment variable is not set")
-	}
+	url, username, password := envVars["SEARCH_SERVER_URL"], envVars["SEARCH_SERVER_USERNAME"], envVars["SEARCH_SERVER_PASSWORD"]
 
 	client := &http.Client{}
 	request, err := http.NewRequest("POST", url+"/"+stream+"/_search", bytes.NewReader(searchRequestJSON))
@@ -126,6 +134,7 @@ func main() {
 		return
 	}
 	port := os.Args[2]
+
 	router.Post("/api/default/_search", func(w http.ResponseWriter, r *http.Request) {
 
 		stream := r.URL.Query().Get("stream")
@@ -142,8 +151,6 @@ func main() {
 		searchResponseBytes, err := search(stream, value, from, size)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			// w.WriteHeader(http.StatusInternalServerError)
-			// w.Write([]byte(err.Error()))
 			return
 		}
 
