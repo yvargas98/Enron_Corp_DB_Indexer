@@ -4,7 +4,7 @@
 
 2. Install ZincSearch (OpenObserve) from https://zincsearch.com/
 
-3. Set OpenObserve variables and executes OpenObserve:
+3. Set OpenObserve variables (just the first time) and executes OpenObserve:
 - ZO_ROOT_USER_EMAIL="your user" ZO_ROOT_USER_PASSWORD="your password" ./openobserve
 
 4. OpenObserve is run at http://localhost:5080/ 

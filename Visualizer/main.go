@@ -14,64 +14,63 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-func createSearchRequest(stream string, value string, from int, size int) ([]byte, error) {
-	searchRequest := struct {
-		Query struct {
-			SQL            string `json:"sql"`
-			StartTime      int64  `json:"start_time"`
-			EndTime        int64  `json:"end_time"`
-			From           int    `json:"from"`
-			Size           int    `json:"size"`
-			TrackTotalHits bool   `json:"track_total_hits"`
-			SQLMode        string `json:"sql_mode"`
-		} `json:"query"`
-	}{
-		Query: struct {
-			SQL            string `json:"sql"`
-			StartTime      int64  `json:"start_time"`
-			EndTime        int64  `json:"end_time"`
-			From           int    `json:"from"`
-			Size           int    `json:"size"`
-			TrackTotalHits bool   `json:"track_total_hits"`
-			SQLMode        string `json:"sql_mode"`
-		}{
-			SQL:            fmt.Sprintf("SELECT * FROM %s WHERE match_all_ignore_case('%s') ORDER BY id", stream, value),
-			StartTime:      1703900002074496,
-			EndTime:        time.Now().UnixMicro(),
-			From:           from,
-			Size:           size,
-			TrackTotalHits: true,
-			SQLMode:        "full",
-		},
-	}
-
-	searchRequestJSON, err := json.Marshal(searchRequest)
-	if err != nil {
-		return nil, fmt.Errorf("Error marshaling search request %v", err)
-	}
-
-	return searchRequestJSON, nil
+type SearchQuery struct {
+	SQL            string `json:"sql"`
+	StartTime      int64  `json:"start_time"`
+	EndTime        int64  `json:"end_time"`
+	From           int    `json:"from"`
+	Size           int    `json:"size"`
+	TrackTotalHits bool   `json:"track_total_hits"`
+	SQLMode        string `json:"sql_mode"`
 }
 
-// Realiza la búsqueda
+type SearchRequest struct {
+	Query SearchQuery `json:"query"`
+}
+
+func createSearchRequest(stream string, value string, from int, size int) ([]byte, error) {
+	searchQuery := SearchQuery{
+		SQL:            fmt.Sprintf("SELECT * FROM %s WHERE match_all_ignore_case('%s') ORDER BY id", stream, value),
+		StartTime:      1703900002074496,
+		EndTime:        time.Now().UnixMicro(),
+		From:           from,
+		Size:           size,
+		TrackTotalHits: true,
+		SQLMode:        "full",
+	}
+
+	request := SearchRequest{Query: searchQuery}
+
+	return json.Marshal(request)
+}
+
+func getRequiredEnvVars(vars []string) (map[string]string, error) {
+	envVars := make(map[string]string)
+
+	for _, varName := range vars {
+		varValue := os.Getenv(varName)
+
+		if varValue == "" {
+			return nil, fmt.Errorf("Environment variable %s is not set", varName)
+		}
+
+		envVars[varName] = varValue
+	}
+
+	return envVars, nil
+}
+
 func search(stream string, value string, from int, size int) ([]byte, error) {
 	searchRequestJSON, err := createSearchRequest(stream, value, from, size)
 	if err != nil {
 		return nil, err
 	}
 
-	url := os.Getenv("SEARCH_SERVER_URL")
-	if url == "" {
-		return nil, fmt.Errorf("SEARCH_SERVER_URL environment variable is not set")
+	envVars, err := getRequiredEnvVars([]string{"SEARCH_SERVER_URL", "SEARCH_SERVER_USERNAME", "SEARCH_SERVER_PASSWORD"})
+	if err != nil {
+		return nil, err
 	}
-	username := os.Getenv("SEARCH_SERVER_USERNAME")
-	if username == "" {
-		return nil, fmt.Errorf("SEARCH_SERVER_USERNAME environment variable is not set")
-	}
-	password := os.Getenv("SEARCH_SERVER_PASSWORD")
-	if password == "" {
-		return nil, fmt.Errorf("SEARCH_SERVER_PASSWORD environment variable is not set")
-	}
+	url, username, password := envVars["SEARCH_SERVER_URL"], envVars["SEARCH_SERVER_USERNAME"], envVars["SEARCH_SERVER_PASSWORD"]
 
 	client := &http.Client{}
 	request, err := http.NewRequest("POST", url+"/_search", bytes.NewReader(searchRequestJSON))
@@ -127,6 +126,7 @@ func main() {
 		return
 	}
 	port := os.Args[2]
+
 	router.Post("/api/default/_search", func(w http.ResponseWriter, r *http.Request) {
 
 		stream := r.URL.Query().Get("stream")
@@ -143,8 +143,6 @@ func main() {
 		searchResponseBytes, err := search(stream, value, from, size)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			// w.WriteHeader(http.StatusInternalServerError)
-			// w.Write([]byte(err.Error()))
 			return
 		}
 
