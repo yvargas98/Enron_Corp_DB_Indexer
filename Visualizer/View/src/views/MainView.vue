@@ -22,10 +22,6 @@ export default {
     created() {
         this.searchService = new SearchServices()
     },
-    async mounted() {
-        // await this.searchContents()
-        console.log(import.meta.env.VITE_INDEX_NAME)
-    },
     data() {
         return {
             value: "",
@@ -50,12 +46,12 @@ export default {
             }
             if (this.value != "") {
                 const content = await this.searchService.searchContents(requestValues)
-                const formatEmails = content.map((item) => ({
-                    content: item.content,
-                    date: item.date,
-                    from: item.from,
-                    subject: item.subject,
-                    to: item.to,
+                const formatEmails = content.hits.map((item) => ({
+                    content: item._source.content,
+                    date: item._source.date,
+                    from: item._source.from,
+                    subject: item._source.subject,
+                    to: item._source.to,
                 }))
                 this.setEmails(formatEmails)
                 this.totalResults = formatEmails.length;

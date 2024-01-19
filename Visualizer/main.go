@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -41,7 +40,7 @@ func createSearchRequest(value string, from int, size int) ([]byte, error) {
 		SortFields: []string{"id"},
 		From:       from,
 		MaxResults: size,
-		Source:     []string{"from", "to", "date", "content"},
+		Source:     []string{"from", "to", "date", "subject", "content"},
 	}
 
 	searchRequestJSON, err := json.Marshal(searchRequest)
@@ -81,7 +80,7 @@ func search(stream string, value string, from int, size int) ([]byte, error) {
 	url, username, password := envVars["SEARCH_SERVER_URL"], envVars["SEARCH_SERVER_USERNAME"], envVars["SEARCH_SERVER_PASSWORD"]
 
 	client := &http.Client{}
-	request, err := http.NewRequest("POST", url+"/"+stream+"/_search", bytes.NewReader(searchRequestJSON))
+	request, err := http.NewRequest("POST", url+stream+"/_search", bytes.NewReader(searchRequestJSON))
 	if err != nil {
 		return nil, fmt.Errorf("Error creating HTTP request %v", err)
 	}
@@ -135,20 +134,22 @@ func main() {
 	}
 	port := os.Args[2]
 
-	router.Post("/api/default/_search", func(w http.ResponseWriter, r *http.Request) {
+	router.Post("/api/_search", func(w http.ResponseWriter, r *http.Request) {
 
-		stream := r.URL.Query().Get("stream")
-		value := r.URL.Query().Get("value")
-		from, err := strconv.Atoi(r.URL.Query().Get("from"))
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Error converting 'from' to int %v", err), http.StatusBadRequest)
-		}
-		size, err := strconv.Atoi(r.URL.Query().Get("size"))
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Error converting 'size' to int %v", err), http.StatusBadRequest)
+		var searchParams struct {
+			Stream string `json:"stream"`
+			Value  string `json:"value"`
+			From   int    `json:"from"`
+			Size   int    `json:"size"`
 		}
 
-		searchResponseBytes, err := search(stream, value, from, size)
+		err := json.NewDecoder(r.Body).Decode(&searchParams)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Error decoding request body: %v", err), http.StatusBadRequest)
+			return
+		}
+
+		searchResponseBytes, err := search(searchParams.Stream, searchParams.Value, searchParams.From, searchParams.Size)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
