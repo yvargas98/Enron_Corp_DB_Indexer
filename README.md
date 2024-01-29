@@ -2,7 +2,7 @@
 
 1. Download Enron Corp Database from http://www.cs.cmu.edu/~enron/enron_mail_20110402.tgz
 
-2. Install ZincSearch (OpenObserve) from https://zincsearch.com/
+2. Install ZincSearch (OpenObserve) from https://openobserve.ai/docs/quickstart/#openobserve-cloud
 
 3. Set OpenObserve variables (just the first time) and executes OpenObserve:
 - ZO_ROOT_USER_EMAIL="your user" ZO_ROOT_USER_PASSWORD="your password" ./openobserve
@@ -39,3 +39,12 @@
 14. Executes ./searcher -port 3000
 
 15. Open http://localhost:3000/ and start to search
+
+16. Optimization:
+1. Envío de batches de tamaño 100, en lugar de enviar documento por documento a Open Observe
+    - Comparando las imágenes cpu_profile_without-optimization.png y cpu_profile.png:
+        a. Duración 949.52s vs 122.43s
+        b. Para main aunque con la optimización se incrementó la proporción del tiempo de ejecución total, disminuyó el tiempo total que se gastó en la función, igualmente pasó con la función ProcessFile.
+        c. Las llamadas al sistema (syscall) disminuyeron en tiempo y proporción del tiempo de ejecución total.
+2. Uso de un map en la función formatEmailContent en lugar de crear http headers para formatear los emails.
+3. Cambio MarshalIndent a simplemente Marshal. 
